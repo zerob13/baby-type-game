@@ -8,3 +8,13 @@ test-results/
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+keybud-save-*.json
+__pycache__/

@@ -10,7 +10,7 @@ Vite supports a `vanilla-ts` template and produces static build output. Select a
 
 The first playable milestone implements lesson `grassland-01`. A complete campaign contains 32 lessons across eight chapters; add their content when each chapter's mechanics are ready. Do not create empty framework layers or placeholder modules for those chapters.
 
-The current repository contains documentation and concept images. Runtime entry points, dependencies, tests, scripts, and deployment configuration belong to the implementation milestones below.
+The current repository contains documentation, concept images, repository privacy checks, and a GitHub Actions deployment workflow. Runtime entry points, application dependencies, and gameplay tests belong to the implementation milestones below. Cloudflare setup is specified in the [deployment guide](deployment.md).
 
 ## 2. Source organization
 
@@ -256,15 +256,14 @@ M1 is complete only when a learner can begin, understand the prompt, grow territ
 
 ### M5: Publish the static game
 
-- [ ] Create or connect the intended GitHub repository and push the reviewed project when publication is requested.
-- [ ] Add CI for a clean install, type check, behavioral tests, and a production build once those scripts exist.
-- [ ] Connect Cloudflare Pages to the intended GitHub repository, with `main` as production branch.
-- [ ] Use `npm ci && npm run build` as the build command and `dist` as the output directory.
+- [ ] Configure the Cloudflare account/token repository secrets and create the Direct Upload project using the deployment workflow.
+- [ ] Activate the configured clean install, type check, behavioral tests, and production build by completing the M1 scaffold and scripts.
+- [ ] Deploy the verified `dist` artifact from GitHub Actions after successful `main` checks; do not enable a second automatic Pages Git build.
 - [ ] Serve a root `index.html`; keep application navigation in the client without introducing deep-path routing requirements.
 - [ ] Verify the preview, then the selected production domain, save/resume, asset loading, and editor capabilities over HTTPS.
 - [ ] Explain export/import when switching from a preview origin to the production domain. Do not imply shared saves across those origins.
 
-Git integration and static hosting are supported by [Cloudflare Pages](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/). No Cloudflare Worker, database, or account service is required for the planned runtime.
+Direct Upload from CI is supported by [Cloudflare Pages](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/). No Cloudflare Worker, database, or account service is required for the planned runtime.
 
 ## 9. Verification contracts
 

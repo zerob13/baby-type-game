@@ -10,6 +10,7 @@
 | --- | --- |
 | [完整游戏策划](docs/game-design.md) | 人物、剧情、领地规则、课程、随机性、界面、美术、存档和体验验收 |
 | [Implementation plan](docs/implementation-plan.md) | Technical contracts, milestones, tests, and Cloudflare deployment |
+| [Deployment setup](docs/deployment.md) | GitHub Actions, Cloudflare secrets, one-time project creation, and publication privacy |
 | [人物概念图](docs/concepts/character-concept.png) | 四位主要角色、地图精灵和表情 |
 | [游戏界面概念图](docs/concepts/gameplay-concept.png) | 地图、领地边界和打字教学区 |
 | [Concept prompts](docs/concepts/prompts.txt) | Image generation prompts and reference description |
@@ -26,7 +27,17 @@
 
 The repository contains the game design, implementation plan, and concept images. The playable application starts with milestone M1: one grassland map covering guided typing, energy, territory expansion, an optional computer challenge, victory, and local save/resume.
 
-The planned stack is TypeScript, Vite, Canvas 2D, and native HTML/CSS controls. Runtime scripts and dependencies are introduced with M1. Deployment targets a static Cloudflare Pages site connected to GitHub.
+The planned stack is TypeScript, Vite, Canvas 2D, and native HTML/CSS controls. Runtime scripts and dependencies are introduced with M1. GitHub Actions runs repository checks now and builds/deploys the static game to Cloudflare Pages once the application scaffold exists. Follow the [deployment setup](docs/deployment.md) to add the two secrets and create the Pages project.
+
+## Repository checks
+
+```sh
+python3 scripts/check_repository.py --self-test
+python3 scripts/check_repository.py
+git config --local core.hooksPath .githooks
+```
+
+The pre-push hook and CI check publishable history and files without printing matched private values. The approved owner identity is `zerob13 <i@zerob13.com>`; GitHub noreply identities are also supported. Application build and test commands are introduced with M1.
 
 ## Repository conventions
 
