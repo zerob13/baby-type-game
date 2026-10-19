@@ -48,7 +48,7 @@ export function editorTask(kind: TaskKind, index: number): EditorTask {
 export function taskSatisfied(task: EditorTask, source: string, target: string, start: number, end: number, events: ReadonlySet<string>, focusTarget?: number): boolean {
   if (!task.required.every(event => events.has(event))) return false;
   if (task.kind === 'focus') return focusTarget === task.focusTarget;
-  if (task.selection) return start === task.selection[0] && end === task.selection[1];
+  if (task.selection) return source === task.source && start === task.selection[0] && end === task.selection[1];
   return (task.finalSource === undefined || source === task.finalSource) && (task.finalTarget === undefined || target === task.finalTarget);
 }
 export function mountEditor(host: HTMLElement, run: Run, mac: boolean, callbacks: { activity: () => void; complete: () => void; mistake: () => void; hint: () => void; next: () => void }): () => void {

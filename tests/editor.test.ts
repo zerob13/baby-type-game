@@ -21,3 +21,9 @@ test('undo and redo need observed history actions as well as the final text', ()
   expect(taskSatisfied(task, 'sun', '', 0, 0, new Set(['typed', 'historyUndo']))).toBe(false);
   expect(taskSatisfied(task, 'sun', '', 0, 0, new Set(['typed', 'historyUndo', 'historyRedo']))).toBe(true);
 });
+
+test('selection must cover the requested original text, not edited text at matching offsets', () => {
+  const task = editorTask('selection', 0);
+  expect(taskSatisfied(task, 'cat sky', '', 0, 3, new Set(['select']))).toBe(false);
+  expect(taskSatisfied(task, 'sun sky', '', 0, 3, new Set(['select']))).toBe(true);
+});
