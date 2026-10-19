@@ -17,7 +17,7 @@ async function typeMap(page: Page): Promise<void> {
   for (let group = 0; group < 70 && await page.locator('#typing-input').count(); group++) {
     const text = await page.locator('.prompt-char:not(.done)').allTextContents();
     await page.keyboard.type(text.join('').replaceAll('␣', ' '), { delay: 8 });
-    if (group === 8 && test.info().project.name === 'chromium' && await page.locator('.lesson-heading').textContent().then(text => text?.includes('1-1'))) await page.screenshot({ path: 'test-results/keybud-gameplay.png' });
+    if (group === 8 && test.info().project.name === 'chromium' && await page.locator('.lesson-heading').allTextContents().then(text => text.some(value => value.includes('1-1')))) await page.screenshot({ path: 'test-results/keybud-gameplay.png' });
   }
   await expect(page.getByRole('heading', { name: /这片土地，点亮啦|整个世界，都亮起来了/ })).toBeVisible();
 }
@@ -27,6 +27,14 @@ async function editorMap(page: Page, kind: NonNullable<(typeof lessons)[number][
     const task = editorTask(kind, index);
     await expect(page.getByRole('heading', { name: task.title, exact: true })).toBeVisible();
     const source = page.locator('#native-source');
+    if (index === 0) {
+      await page.getByRole('button', { name: 'Ⅱ 暂停' }).click();
+      await expect(page.locator('#practice-area')).toHaveAttribute('inert', '');
+      await page.keyboard.type('bad');
+      await expect(source).toHaveValue(task.source);
+      await page.getByRole('button', { name: '继续冒险 →', exact: true }).click();
+      await expect(page.locator('#practice-area')).not.toHaveAttribute('inert', '');
+    }
     if (task.kind === 'focus') {
       await expect(page.locator('[data-resume-focus]')).toBeFocused();
       const option = test.info().project.name === 'webkit' && mod === 'Meta' ? 'Alt+' : '';
@@ -53,14 +61,14 @@ async function editorMap(page: Page, kind: NonNullable<(typeof lessons)[number][
         await page.keyboard.type(task.typed!, { delay: 12 });
         for (let step = 0; step < task.typed!.length; step++) {
           await page.keyboard.press(`${mod}+z`);
-          const remaining = await page.locator('#editor-host').evaluate(host => host.querySelector('textarea')?.value);
+          const remaining = await page.evaluate(() => document.querySelector<HTMLTextAreaElement>('#native-source')?.value);
           if (!remaining) break;
         }
         if (task.required.includes('historyRedo')) {
           await expect(source).toHaveValue('');
           for (let step = 0; step < task.typed!.length; step++) {
             await page.keyboard.press(mod === 'Meta' ? 'Meta+Shift+z' : 'Control+y');
-            const restored = await page.locator('#editor-host').evaluate(host => host.querySelector('textarea')?.value);
+            const restored = await page.evaluate(() => document.querySelector<HTMLTextAreaElement>('#native-source')?.value);
             if (restored === undefined || restored === task.typed) break;
           }
         }
@@ -97,6 +105,11 @@ test('one key is one attempt; pause, reload, resume and export preserve the batt
   expect(exported.activeRun!.correct).toBe(2);
   await page.getByRole('button', { name: '保存并返回' }).click();
   await page.getByRole('button', { name: '设置', exact: true }).click();
+  const invalid = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: '导入存档', exact: true }).click();
+  await (await invalid).setFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{broken') });
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('当前进度没有改变');
+  expect((await saved(page)).activeRun!.correct).toBe(2);
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: '导入存档', exact: true }).click();
   await (await chooser).setFiles(file!);

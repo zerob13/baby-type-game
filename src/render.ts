@@ -46,6 +46,17 @@ function actor(ctx: CanvasRenderingContext2D, x: number, y: number, role: 'playe
   box(ctx, '#77634d', 14, -14, 2, 27); box(ctx, scarf, 16, -13, 12, 7); box(ctx, '#fffdf1', 19, -11, 3, 3);
   ctx.restore();
 }
+const actors = new Map<string, HTMLCanvasElement>();
+function drawActor(ctx: CanvasRenderingContext2D, x: number, y: number, role: 'player' | 'rival' | 'king', tile: number, time: number, reduced: boolean): void {
+  let sprite = actors.get(role);
+  if (!sprite) {
+    sprite = document.createElement('canvas'); sprite.width = 48; sprite.height = 40;
+    actor(sprite.getContext('2d')!, 16, 22, role, 0, true); actors.set(role, sprite);
+  }
+  const size = Math.min(1, tile / 20);
+  const bob = reduced ? 0 : Math.round(Math.sin(time / 220));
+  ctx.drawImage(sprite, Math.round(x - 16 * size), Math.round(y - 22 * size + bob), Math.round(48 * size), Math.round(40 * size));
+}
 function windmill(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, awake: boolean, reduced: boolean): void {
   ctx.save(); ctx.translate(Math.round(x), Math.round(y));
   box(ctx, '#33453d20', -12, 4, 25, 5); box(ctx, awake ? '#d9caa2' : '#c6c2ad', -7, -15, 15, 21);
@@ -96,8 +107,9 @@ function landmark(ctx: CanvasRenderingContext2D, x: number, y: number, chapter: 
 }
 export function drawMap(canvas: HTMLCanvasElement, run: Run, options: { reduced: boolean; fixedView: boolean; time: number }): void {
   const parent = canvas.parentElement!;
-  const width = Math.max(280, Math.round(parent.clientWidth / 3));
-  const height = Math.max(140, Math.round(parent.clientHeight / 3));
+  const scale = parent.clientHeight < 360 || parent.clientWidth < 600 ? 2 : 3;
+  const width = Math.max(1, Math.round(parent.clientWidth / scale));
+  const height = Math.max(1, Math.round(parent.clientHeight / scale));
   if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
   const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
@@ -113,7 +125,7 @@ export function drawMap(canvas: HTMLCanvasElement, run: Run, options: { reduced:
   if (lesson.chapter === 6 || lesson.chapter === 7) {
     for (let i = 0; i < 12; i++) { const n = hash(i, run.seed); const x = n % width; const y = n % height; box(ctx, '#fff9d080', x, y, 1, 3); box(ctx, '#fff9d080', x - 1, y + 1, 3, 1); }
   }
-  const tile = Math.max(12, Math.floor(Math.min((width - 44) / 12, (height - 22) / 6)));
+  const tile = Math.max(6, Math.floor(Math.min((width - 36) / 12, (height - 24) / 6)));
   const landWidth = lesson.kind === 'edit' ? 6 : 12;
   const ox = Math.round((width - landWidth * tile) / 2);
   const oy = Math.round((height - 6 * tile) / 2 - tile - 4);
@@ -184,8 +196,8 @@ export function drawMap(canvas: HTMLCanvasElement, run: Run, options: { reduced:
     ctx.strokeStyle = '#fff9c8'; ctx.lineWidth = 1;
     ctx.strokeRect(Math.round(homeX - tile / 2 - 2), Math.round(homeY - tile / 2 - 2), tile + 4, tile + 4);
   }
-  actor(ctx, ox + (player % 12 + 0.5) * tile, oy + (Math.floor(player / 12) + 0.6) * tile, 'player', clock, options.reduced);
-  if (run.flag >= 0) actor(ctx, ox + (run.flag % 12 + 0.5) * tile, oy + (Math.floor(run.flag / 12) + 0.6) * tile, lesson.chapter === 7 ? 'king' : 'rival', clock + 600, options.reduced);
+  drawActor(ctx, ox + (player % 12 + 0.5) * tile, oy + (Math.floor(player / 12) + 0.6) * tile, 'player', tile, clock, options.reduced);
+  if (run.flag >= 0) drawActor(ctx, ox + (run.flag % 12 + 0.5) * tile, oy + (Math.floor(run.flag / 12) + 0.6) * tile, lesson.chapter === 7 ? 'king' : 'rival', tile, clock + 600, options.reduced);
   if (run.warningUntil !== null) {
     ctx.strokeStyle = '#f4e4af'; ctx.lineWidth = 2;
     const x = ox + run.flag % 12 * tile; const y = oy + Math.floor(run.flag / 12) * tile;

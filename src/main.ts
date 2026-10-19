@@ -51,8 +51,9 @@ function shell(content: string): void {
   lastFrame = performance.now(); promptSignature = '';
 }
 function toast(message: string): void {
-  const element = app.querySelector<HTMLElement>('#toast');
-  if (!element) return;
+  const surface = dialog.open ? dialog : app;
+  let element = surface.querySelector<HTMLElement>('.toast');
+  if (!element) { element = document.createElement('div'); element.className = 'toast'; element.setAttribute('role', 'status'); surface.append(element); }
   element.textContent = message; element.classList.add('visible'); clearTimeout(toastTimeout);
   toastTimeout = window.setTimeout(() => element.classList.remove('visible'), 3500);
 }
@@ -76,11 +77,14 @@ function unlockAudio(): void { try { audio ??= new AudioContext(); void audio.re
 function pauseGame(): void {
   if (screen !== 'game' || !run || run.phase === 'won') return;
   pause(run); profile.activeRun = run; persist();
-  const overlay = app.querySelector<HTMLElement>('#pause-overlay'); if (overlay) overlay.hidden = false;
+  app.querySelector('#practice-area')?.setAttribute('inert', '');
+  const overlay = app.querySelector<HTMLElement>('#pause-overlay');
+  if (overlay) { const newlyPaused = overlay.hidden; overlay.hidden = false; if (newlyPaused) overlay.querySelector<HTMLButtonElement>('button')?.focus(); }
 }
 function resumeGame(): void {
   if (!run) return;
   resume(run); lastFrame = performance.now();
+  app.querySelector('#practice-area')?.removeAttribute('inert');
   const overlay = app.querySelector<HTMLElement>('#pause-overlay'); if (overlay) overlay.hidden = true;
   if (getLesson(run.lessonId).kind === 'edit') {
     if (remountOnResume || !cleanupEditor) { attachEditor(); remountOnResume = false; }
@@ -128,11 +132,15 @@ function startLesson(id: string, mode: Mode = 'learn'): void {
 function showGame(): void {
   if (!run) return;
   screen = 'game'; const lesson = getLesson(run.lessonId); const chapter = chapters[lesson.chapter];
-  shell(`<main class="game-screen"><section class="game-hud" aria-label="本次冒险状态"><div class="lesson-heading"><span class="mode-label">${run.mode === 'learn' ? '轻松学习' : '领地挑战'}</span><strong>${chapter.name} <small>${lesson.chapter + 1}-${lesson.number}</small></strong></div><div class="land-meter"><div><span>家园领地</span><strong id="territory-value">1%</strong></div><progress id="territory-progress" max="1" value="0" aria-label="领地收复进度"></progress></div><div class="metric"><span>准确率</span><strong id="accuracy-value">—</strong></div><div class="metric"><span>速度</span><strong id="speed-value">—<small>字/分</small></strong></div><button class="pause-button" data-action="pause">Ⅱ <span>暂停</span></button></section><section class="game-world"><canvas id="game-map" role="img" aria-label="领地地图，进度显示在上方状态栏"></canvas><div class="world-caption"><span class="map-label">${chapter.name}</span><span id="world-message">${chapter.subtitle}</span></div><div class="map-legend"><span><i class="player-color"></i>点点的家园</span><span><i class="enemy-color"></i>${lesson.chapter === 7 ? '灰云王' : '团团'}的领地</span></div><div class="pause-overlay" id="pause-overlay" ${run.phase === 'paused' ? '' : 'hidden'}><div class="pause-paper"><span class="rest-leaf" aria-hidden="true"></span><h2>歇一小会儿</h2><p>${lesson.kind === 'edit' ? '重新打开页面后，当前小任务从头开始，已点亮的土地会保留。' : '家园会在这里等你。'}</p><button class="primary-button" data-action="resume">继续冒险 →</button><button class="quiet-button" data-action="save-home">保存并返回</button></div></div></section><section class="training-panel ${lesson.kind === 'edit' ? 'editing-panel' : ''}" id="practice-area" aria-label="练习区域"><div class="practice-body">${lesson.kind === 'edit' ? '<div id="editor-host"></div>' : `<div class="exercise-meta"><strong>${lesson.title}</strong><span class="energy-label">能量 <i id="energy-one"></i><i id="energy-two"></i></span><span id="combo-label">慢慢来，先找准</span></div><div class="typing-zone" id="typing-zone"><input id="typing-input" class="practice-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="打字练习区"><div id="prompt" class="prompt-track" aria-hidden="true"></div><p id="input-feedback" class="input-feedback" aria-live="polite">点一下这里，把手指放回 F 和 J。</p></div><div id="keyboard" class="keyboard" aria-label="键盘与目标按键"></div><div class="finger-caption"><span id="hand-diagram"></span><span id="finger-hint"></span><button class="text-button" data-action="toggle-hints">${profile.settings.hints ? '收起手位' : '显示手位'}</button></div>`}</div><aside class="teacher-area"><div class="teacher-bubble" id="teacher-message">${escape(lesson.hint)}</div>${avatar('teacher')}<span class="teacher-name">慢慢老师</span></aside></section><footer class="game-footer"><button class="text-button" data-action="restart">重新开始本关</button><span id="save-label">${store.saved ? '进度已保存' : '随时可以暂停或导出存档'}</span><button class="text-button" data-action="export">导出存档</button></footer></main>`);
+  shell(`<main class="game-screen"><section class="game-hud" aria-label="本次冒险状态"><div class="lesson-heading"><span class="mode-label">${run.mode === 'learn' ? '轻松学习' : '领地挑战'}</span><strong>${chapter.name} <small>${lesson.chapter + 1}-${lesson.number}</small></strong></div><div class="land-meter"><div><span>家园领地</span><strong id="territory-value">1%</strong></div><progress id="territory-progress" max="1" value="0" aria-label="领地收复进度"></progress></div><div class="metric"><span>${lesson.kind === 'edit' ? '机关' : '准确率'}</span><strong id="accuracy-value">—</strong></div><div class="metric"><span>速度</span><strong id="speed-value">—<small>字/分</small></strong></div><button class="pause-button" data-action="pause">Ⅱ <span>暂停</span></button></section><section class="game-world"><canvas id="game-map" role="img" aria-label="领地地图，进度显示在上方状态栏"></canvas><div class="world-caption"><span class="map-label">${chapter.name}</span><span id="world-message">${chapter.subtitle}</span></div><div class="map-legend"><span><i class="player-color"></i>点点的家园</span><span><i class="enemy-color"></i>${lesson.chapter === 7 ? '灰云王' : '团团'}的领地</span></div><div class="pause-overlay" id="pause-overlay" ${run.phase === 'paused' ? '' : 'hidden'}><div class="pause-paper"><span class="rest-leaf" aria-hidden="true"></span><h2>歇一小会儿</h2><p>${lesson.kind === 'edit' ? '重新打开页面后，当前小任务从头开始，已点亮的土地会保留。' : '家园会在这里等你。'}</p><button class="primary-button" data-action="resume">继续冒险 →</button><button class="quiet-button" data-action="save-home">保存并返回</button></div></div></section><section class="training-panel ${lesson.kind === 'edit' ? 'editing-panel' : ''}" id="practice-area" aria-label="练习区域"><div class="practice-body">${lesson.kind === 'edit' ? '<div id="editor-host"></div>' : `<div class="exercise-meta"><strong>${lesson.title}</strong><span class="energy-label">能量 <i id="energy-one"></i><i id="energy-two"></i></span><span id="combo-label">慢慢来，先找准</span></div><div class="typing-zone" id="typing-zone"><input id="typing-input" class="practice-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="打字练习区"><div id="prompt" class="prompt-track" aria-hidden="true"></div><p id="input-feedback" class="input-feedback" aria-live="polite">点一下这里，把手指放回 F 和 J。</p></div><div id="keyboard" class="keyboard" aria-label="键盘与目标按键"></div><div class="finger-caption"><span id="hand-diagram"></span><span id="finger-hint"></span><button class="text-button" data-action="toggle-hints">${profile.settings.hints ? '收起手位' : '显示手位'}</button></div>`}</div><aside class="teacher-area"><div class="teacher-bubble" id="teacher-message">${escape(lesson.hint)}</div>${avatar('teacher')}<span class="teacher-name">慢慢老师</span></aside></section><footer class="game-footer"><button class="text-button" data-action="restart">重新开始本关</button><span id="save-label">${store.saved ? '进度已保存' : '随时可以暂停或导出存档'}</span><button class="text-button" data-action="export">导出存档</button></footer></main>`);
   const practice = app.querySelector<HTMLElement>('#practice-area')!;
+  practice.toggleAttribute('inert', run.phase === 'paused');
   practice.addEventListener('focusout', event => {
-    if (lesson.kind === 'edit' && event.relatedTarget instanceof Node && practice.contains(event.relatedTarget)) return;
-    if (screen === 'game' && run?.phase === 'playing') pauseGame();
+    if (lesson.kind === 'edit' && (event.relatedTarget === null || (event.relatedTarget instanceof Node && practice.contains(event.relatedTarget)))) return;
+    queueMicrotask(() => {
+      if (lesson.kind === 'edit' && practice.contains(document.activeElement)) return;
+      if (screen === 'game' && run?.phase === 'playing') pauseGame();
+    });
   });
   if (lesson.kind === 'edit') attachEditor();
   else {
@@ -285,6 +293,9 @@ function handleAction(action: string): void {
     });
   }
 }
+document.addEventListener('pointerdown', event => {
+  if (screen === 'game' && run?.phase === 'playing' && event.target instanceof Node && !app.querySelector('#practice-area')?.contains(event.target)) pauseGame();
+});
 document.addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button'); if (!button || button.disabled) return;
   if (button.dataset.action) handleAction(button.dataset.action);
