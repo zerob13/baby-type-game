@@ -10,7 +10,7 @@
 | --- | --- |
 | [完整游戏策划](docs/game-design.md) | 人物、剧情、领地规则、课程、随机性、界面、美术、存档和体验验收 |
 | [Implementation plan](docs/implementation-plan.md) | Technical contracts, milestones, tests, and Cloudflare deployment |
-| [Deployment setup](docs/deployment.md) | GitHub Actions, Cloudflare secrets, one-time project creation, and publication privacy |
+| [Deployment setup](docs/deployment.md) | GitHub Actions, Cloudflare secrets, production deployment and publication privacy |
 | [人物概念图](docs/concepts/character-concept.png) | 四位主要角色、地图精灵和表情 |
 | [游戏界面概念图](docs/concepts/gameplay-concept.png) | 地图、领地边界和打字教学区 |
 | [Concept prompts](docs/concepts/prompts.txt) | Image generation prompts and reference description |
@@ -27,7 +27,7 @@
 
 The repository contains the game design, implementation plan, and concept images. The playable application starts with milestone M1: one grassland map covering guided typing, energy, territory expansion, an optional computer challenge, victory, and local save/resume.
 
-The planned stack is TypeScript, Vite, Canvas 2D, and native HTML/CSS controls. Runtime scripts and dependencies are introduced with M1. GitHub Actions runs repository checks now and builds/deploys the static game to Cloudflare Pages once the application scaffold exists. Follow the [deployment setup](docs/deployment.md) to add the two secrets and create the Pages project.
+The planned stack is TypeScript, Vite, Canvas 2D, and native HTML/CSS controls. Runtime scripts and dependencies are introduced with M1. GitHub Actions runs repository checks now and builds/deploys the static game to Cloudflare Pages once the application scaffold exists. Follow the [deployment setup](docs/deployment.md) for the configured Pages project and repository secrets.
 
 ## Repository checks
 

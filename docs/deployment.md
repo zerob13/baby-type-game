@@ -32,22 +32,13 @@ Enter the values directly into GitHub. Do not paste them into an issue, pull req
 
 No additional GitHub personal access token is required. The workflow uses GitHub's read-only built-in permissions for checkout and artifacts.
 
-## 3. Create the Pages project once
+## 3. Pages project
 
-The CI can create an empty Direct Upload project before the game application exists:
+The `baby-type-game` Direct Upload project is configured in Cloudflare with production branch `main`. The workflow deploys to this existing project; it does not create or delete projects.
 
-1. Open [the CI and Cloudflare Pages workflow](https://github.com/zerob13/baby-type-game/actions/workflows/ci.yml).
-2. Select **Run workflow**, choose the `main` branch, and enable **Create the Cloudflare Pages project once before its first deployment**.
-3. Run it after saving both secrets. It will check the repository, authenticate, and create `baby-type-game` with production branch `main`.
-4. Confirm that the project appears under Workers & Pages in the intended Cloudflare account. Without application code, the workflow creates the project but does not deploy a fake game or the repository's documents.
+Keep the project name in the deployment command consistent with Cloudflare. Do not enable a second automatic Pages Git build. The GitHub workflow owns the build and deploy sequence.
 
-Do this only once. If the project already exists, leave the checkbox disabled. A duplicate-create error means the creation request should not be repeated; it is not a reason to delete an existing project.
-
-If you already created a Git-integrated Pages project, do not also enable its automatic Git builds. Use one production deployment mechanism, or choose a separate Direct Upload project. The workflow owns the production build and deploy sequence.
-
-The project name is `baby-type-game` in both Wrangler commands in the workflow. If that name cannot be used in your account, update both commands consistently before creating or deploying it. The Pages dashboard supplies the actual site address.
-
-Project creation uses `wrangler pages project create baby-type-game --production-branch=main`; see [Wrangler Pages commands](https://developers.cloudflare.com/workers/wrangler/commands/pages/).
+If this repository is used in a different Cloudflare account, create a Direct Upload project named `baby-type-game` with production branch `main` before deploying. See [Wrangler Pages commands](https://developers.cloudflare.com/workers/wrangler/commands/pages/).
 
 ## 4. Automatic production deployment
 
@@ -104,10 +95,9 @@ All values embedded in a browser bundle, including Vite's `VITE_*` variables, ar
 | Invalid account ID | Save the account ID, not a zone ID or account name, in `CLOUDFLARE_ACCOUNT_ID`. |
 | Missing token | Save `CLOUDFLARE_API_TOKEN` as a repository Actions secret. |
 | Cloudflare authentication failure | Check token validity, Pages Edit permission, selected account, and token expiration. |
-| Project creation says it already exists | Leave the creation checkbox off; do not delete the existing project. |
-| Project not found on deployment | Confirm account/project name and run the creation step once if no project exists. |
+| Project not found on deployment | Confirm the account/project name and that the Direct Upload project exists in that account. |
 | Build or tests fail | Fix the application checks. Deployment runs only after they pass. |
 | Privacy guard fails | Inspect the named file/category locally; do not publish the matched value to investigate it. |
 | No saved progress on a new domain | Browser saves are origin-specific. Export from the previous origin and import on the new one. |
 
-After the first game deployment, verify the actual Pages address, asset loading, complete game loop, refresh/resume, and import/export. A passing documentation check or successful project creation is not a completed end-to-end game deployment.
+After the first game deployment, verify the actual Pages address, asset loading, complete game loop, refresh/resume, and import/export. A passing documentation check  is not a completed end-to-end game deployment.
