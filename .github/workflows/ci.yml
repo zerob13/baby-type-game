@@ -42,8 +42,8 @@ jobs:
           npm ci
           npm run typecheck
           npm test
-          npx playwright install --with-deps chromium
-          npm run test:browser -- --project=chromium
+          npx playwright install --with-deps chromium firefox
+          npm run test:browser -- --project=chromium --project=firefox
           npm run build
           python3 scripts/check_repository.py --dist
 

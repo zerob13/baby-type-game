@@ -24,6 +24,11 @@ describe('campaign and content', () => {
     expect(fingerFor('F')).toMatchObject({ hand: 'left', finger: '食指', shift: 'right' });
     expect(fingerFor('!')).toMatchObject({ hand: 'left', finger: '小指', shift: 'right' });
   });
+  test('the forest river has one walkable bridge connecting both banks', () => {
+    const run = createRun('forest-03', 381, 'bridge');
+    for (let y = 1; y < 7; y++) expect(run.terrain[y * 12 + 6]).toBe(y === 3);
+    expect(reachable(run, run.home, index => run.terrain[index]).has(run.flag)).toBe(true);
+  });
 });
 
 describe('typing and territory', () => {
@@ -137,5 +142,29 @@ describe('typing and territory', () => {
     completeTask(run, 5);
     expect(run.phase).toBe('won');
     expect(stars(run)).toBe(3);
+  });
+  test('enemy bursts can reclaim land without disconnecting the protected home', () => {
+    for (const lessonId of ['mushroom-01', 'market-01', 'castle-04']) {
+      const run = createRun(lessonId, 29, 'invasion', 'challenge');
+      for (let i = 0; i < 55; i++) advance(run, 900, run.prompt[run.cursor]);
+      const before = owned(run, 1);
+      for (let i = 0; i < 6; i++) {
+        advance(run, 40000);
+        expect(reachable(run, run.home, index => run.owners[index] === 1).size).toBe(owned(run, 1));
+        expect(run.owners[run.home]).toBe(1);
+      }
+      expect(owned(run, 1)).toBeLessThan(before);
+    }
+  });
+  test('frame chunking preserves input timing and seeded battle outcomes', () => {
+    const a = createRun('castle-04', 930, 'chunks', 'challenge');
+    const b = createRun('castle-04', 930, 'chunks', 'challenge');
+    for (let i = 0; i < 90; i++) {
+      const key = i % 3 === 1 ? '#' : a.prompt[a.cursor];
+      advance(a, 1000, key);
+      if (b.phase === 'playing') for (let j = 0; j < 19; j++) advance(b, 51);
+      advance(b, b.phase === 'playing' ? 31 : 1000, key);
+    }
+    expect(b).toEqual(a);
   });
 });

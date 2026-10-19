@@ -102,3 +102,16 @@ test('editor restore keeps completed tasks and resumes only the current task', (
   expect(restored.owners).toEqual(run.owners);
   expect(restored.phase).toBe('paused');
 });
+test('an incompatible terrain revision drops only the active battle and preserves completed lessons', () => {
+  const profile = newProfile();
+  for (let index = 1; index <= 4; index++) {
+    const run = createRun(`grassland-0${index}`, 37, `finished-${index}`);
+    while (run.phase !== 'won') advance(run, 1000, run.prompt[run.cursor]);
+    recordVictory(profile, run);
+  }
+  profile.activeRun = createRun('forest-01', 83, 'old-forest');
+  profile.activeRun.revision = 1;
+  const restored = decodeProfile(JSON.stringify(profile));
+  expect(restored.activeRun).toBeNull();
+  expect(Object.values(restored.progress).filter(result => result.learn)).toHaveLength(4);
+});

@@ -73,6 +73,7 @@ export function mountEditor(host: HTMLElement, run: Run, mac: boolean, callbacks
   }
   const reference = host.querySelector<HTMLElement>('.shortcut-reference')!;
   if (task.kind === 'history') reference.textContent = mac ? '撤销 ⌘+Z · 重做 ⌘+Shift+Z' : '撤销 Ctrl+Z · 重做 Ctrl+Y';
+  if (task.kind === 'focus') reference.textContent = mac ? 'Tab 前进 · Shift+Tab 返回；Safari 可加 Option' : 'Tab 前进 · Shift+Tab 返回';
   if (task.kind === 'repair') reference.textContent = mac ? '退格 Delete · 向前删除 Fn+Delete' : '退格 Backspace · 向前删除 Delete';
   if (task.kind === 'selection') reference.textContent = `选择 Shift+←/→ · 全选 ${mod}+A`;
   function check(manual = false): void {

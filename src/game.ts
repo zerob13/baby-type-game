@@ -4,7 +4,7 @@ export type Owner = 0 | 1 | 2;
 export type Mode = 'learn' | 'challenge';
 export interface KeyStat { attempts: number; errors: number }
 export interface Run {
-  id: string; lessonId: string; revision: 1; mode: Mode; phase: 'ready' | 'playing' | 'paused' | 'won';
+  id: string; lessonId: string; revision: 1 | 2; mode: Mode; phase: 'ready' | 'playing' | 'paused' | 'won';
   seed: number; rng: number; width: number; height: number; terrain: boolean[]; owners: Owner[]; home: number; flag: number;
   activeMs: number; windowStart: number; recent: number[]; correct: number; wrong: number; keyStats: Record<string, KeyStat>;
   energy: number; combo: number; maxCombo: number; pressure: number; slowMs: number; warningUntil: number | null;
@@ -73,7 +73,7 @@ export function createRun(lessonId: string, seed: number, id: string, mode: Mode
   const height = 8;
   const terrain = Array.from({ length: width * height }, (_, index) => Math.floor(index / width) > 0 && Math.floor(index / width) < height - 1);
   const run: Run = {
-    id, lessonId, revision: 1, mode, phase: 'ready', seed: seed >>> 0, rng: seed >>> 0, width, height, terrain,
+    id, lessonId, revision: lesson.kind !== 'edit' && [1, 7].includes(lesson.chapter) ? 2 : 1, mode, phase: 'ready', seed: seed >>> 0, rng: seed >>> 0, width, height, terrain,
     owners: terrain.map(() => 0), home: 13, flag: 82, activeMs: 0, windowStart: 0, recent: [], correct: 0, wrong: 0, keyStats: {},
     energy: 0, combo: 0, maxCombo: 0, pressure: 0, slowMs: 0, warningUntil: null, lastAttack: -2000, burstLeft: 0,
     prompt: '', cursor: 0, bag: [], lastTargets: '', taskIndex: 0, taskMistakes: 0, hints: 0, flashes: [],
@@ -82,6 +82,11 @@ export function createRun(lessonId: string, seed: number, id: string, mode: Mode
     for (let y = 1; y < 7; y++) for (let x = 6; x < 12; x++) run.terrain[y * 12 + x] = false;
     run.flag = 77;
   } else if (lesson.chapter > 0) {
+    if (lesson.chapter === 1) for (let y = 1; y < 7; y++) run.terrain[y * 12 + 6] = y === 3;
+    if (lesson.chapter === 7) for (let y = 1; y < 7; y++) {
+      run.terrain[y * 12 + 4] = y === 2 || y === 5;
+      run.terrain[y * 12 + 8] = y === 3 || y === 6;
+    }
     const attempts = 4 + lesson.chapter;
     for (let i = 0; i < attempts; i++) {
       const tile = 14 + Math.floor(random(run) * 68);
@@ -163,13 +168,14 @@ function tick(run: Run): void {
   run.recent = run.recent.filter(time => time > run.activeMs - 15000);
   if (run.mode !== 'challenge' || getLesson(run.lessonId).kind === 'edit' || run.flag === -1) return;
   const lesson = getLesson(run.lessonId);
+  const opponent = lesson.id === 'castle-04' ? (['steady', 'charge', 'periodic'] as const)[Math.min(2, Math.floor(fraction(run) * 3))] : lesson.opponent;
   if (run.activeMs - run.windowStart > 15000 && recentCPM(run) < lesson.targetCPM) {
     run.slowMs += 50;
     if (run.slowMs > 5000) run.pressure = Math.min(3, run.pressure + 0.05 * 0.25 * (1 - recentCPM(run) / lesson.targetCPM));
   } else run.slowMs = 0;
   if (run.warningUntil !== null) {
     if (run.activeMs >= run.warningUntil) {
-      const limit = lesson.opponent === 'charge' ? 3 : lesson.opponent === 'periodic' ? 2 : 1;
+      const limit = opponent === 'charge' ? 3 : opponent === 'periodic' ? 2 : 1;
       run.burstLeft = run.burstLeft || Math.min(limit, Math.floor(run.pressure + 1e-8));
       if (run.pressure + 1e-8 >= 1 && run.burstLeft > 0) {
         run.pressure = Math.max(0, run.pressure - 1); run.burstLeft--; claim(run, 2);
@@ -178,7 +184,7 @@ function tick(run: Run): void {
       run.warningUntil = run.burstLeft > 0 && run.flag !== -1 ? run.activeMs + 1000 : null;
     }
   } else if (run.pressure + 1e-8 >= 1 && run.activeMs - run.lastAttack >= 2000) {
-    const canStart = lesson.opponent === 'steady' || (lesson.opponent === 'charge' ? run.pressure >= 2.99 || run.activeMs - run.lastAttack >= 8000 : Math.floor(run.activeMs / 50) % 160 === 0);
+    const canStart = opponent === 'steady' || (opponent === 'charge' ? run.pressure >= 2.99 || run.activeMs - run.lastAttack >= 8000 : Math.floor(run.activeMs / 50) % 160 === 0);
     if (canStart) run.warningUntil = run.activeMs + 2000;
   }
 }

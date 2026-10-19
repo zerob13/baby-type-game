@@ -51,10 +51,10 @@ export function decodeRun(value: unknown): Run | null {
   const source = object(value);
   const lesson = getLesson(text(source.lessonId, 64));
   const revision = integer(source.revision, 1);
-  if (revision !== 1) return null;
   const id = text(source.id, 128);
   if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new Error('Invalid run ID');
   const run = createRun(lesson.id, integer(source.seed, 0, 0xFFFFFFFF), id, choice(source.mode, ['learn', 'challenge']));
+  if (revision !== run.revision) return null;
   if (lesson.kind === 'edit' && run.mode !== 'learn') throw new Error('Invalid editor mode');
   if (source.width !== run.width || source.height !== run.height || source.home !== run.home) throw new Error('Incompatible map');
   if (!Array.isArray(source.terrain) || source.terrain.length !== run.terrain.length || !source.terrain.every((item, index) => item === run.terrain[index])) throw new Error('Invalid terrain');

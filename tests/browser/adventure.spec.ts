@@ -17,6 +17,7 @@ async function typeMap(page: Page): Promise<void> {
   for (let group = 0; group < 70 && await page.locator('#typing-input').count(); group++) {
     const text = await page.locator('.prompt-char:not(.done)').allTextContents();
     await page.keyboard.type(text.join('').replaceAll('␣', ' '), { delay: 8 });
+    if (group === 8 && test.info().project.name === 'chromium' && await page.locator('.lesson-heading').textContent().then(text => text?.includes('1-1'))) await page.screenshot({ path: 'test-results/keybud-gameplay.png' });
   }
   await expect(page.getByRole('heading', { name: /这片土地，点亮啦|整个世界，都亮起来了/ })).toBeVisible();
 }
@@ -28,7 +29,8 @@ async function editorMap(page: Page, kind: NonNullable<(typeof lessons)[number][
     const source = page.locator('#native-source');
     if (task.kind === 'focus') {
       await expect(page.locator('[data-resume-focus]')).toBeFocused();
-      await page.keyboard.press(task.direction === 'backward' ? 'Shift+Tab' : 'Tab');
+      const option = test.info().project.name === 'webkit' && mod === 'Meta' ? 'Alt+' : '';
+      await page.keyboard.press(`${option}${task.direction === 'backward' ? 'Shift+' : ''}Tab`);
     } else {
       await expect(source).toBeFocused();
       if (task.kind === 'repair') {
@@ -70,11 +72,13 @@ async function editorMap(page: Page, kind: NonNullable<(typeof lessons)[number][
 }
 
 test('one key is one attempt; pause, reload, resume and export preserve the battle', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await start(page);
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduce');
   const initial = await saved(page);
   const target = initial.activeRun!.prompt[0];
   await page.keyboard.press('x');
-  await page.keyboard.press(target);
+  await page.keyboard.down(target); await page.keyboard.down(target); await page.keyboard.up(target);
   await page.getByRole('button', { name: 'Ⅱ 暂停' }).click();
   const before = (await saved(page)).activeRun!;
   expect(before.correct).toBe(1); expect(before.wrong).toBe(0);
@@ -99,6 +103,26 @@ test('one key is one attempt; pause, reload, resume and export preserve the batt
   await page.getByRole('button', { name: '确认', exact: true }).click();
   await expect(page.getByRole('button', { name: '继续冒险 →', exact: true })).toBeVisible();
   expect((await saved(page)).activeRun!.correct).toBe(2);
+});
+
+test('challenge attacks warn, freeze while paused, and produce a separate result', async ({ page }) => {
+  await start(page); await typeMap(page);
+  await page.getByRole('button', { name: '试试领地挑战', exact: true }).click();
+  await page.getByRole('button', { name: '手指准备好了 →' }).click();
+  const input = page.locator('#typing-input');
+  await page.keyboard.press((await input.getAttribute('aria-label'))!.split('：')[1]);
+  await page.keyboard.press('x'); await page.keyboard.press('x');
+  await expect(page.locator('#world-message')).toContainText('正在蓄力');
+  await page.getByRole('button', { name: 'Ⅱ 暂停' }).click();
+  const before = (await saved(page)).activeRun!;
+  await page.waitForTimeout(2300);
+  const after = (await saved(page)).activeRun!;
+  expect(after.activeMs).toBe(before.activeMs); expect(after.owners).toEqual(before.owners);
+  await page.getByRole('button', { name: '继续冒险 →', exact: true }).click();
+  await page.keyboard.press((await input.getAttribute('aria-label'))!.split('：')[1]);
+  await expect.poll(async () => (await saved(page)).activeRun!.owners.filter(owner => owner === 2).length).toBeGreaterThan(1);
+  await typeMap(page);
+  expect((await saved(page)).progress['grassland-01'].challengeStars).toBeGreaterThan(0);
 });
 
 test('the complete 32-lesson campaign works through real typing and native editing', async ({ page }) => {

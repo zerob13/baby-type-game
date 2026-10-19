@@ -1,6 +1,6 @@
 # GitHub Actions and Cloudflare Pages deployment
 
-The repository uses GitHub Actions to check the source, build the static application, and upload only verified `dist` output to a Cloudflare Pages Direct Upload project. Production follows `main`; pull requests run checks without Cloudflare credentials or production deployment.
+The repository uses GitHub Actions to check the source, build the static application, and upload only verified `dist` output to a Cloudflare Pages Direct Upload project. Production is [baby-type-game.pages.dev](https://baby-type-game.pages.dev) and follows `main`; pull requests run checks without Cloudflare credentials or production deployment.
 
 The workflow is [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Each run checks publication privacy, installs locked dependencies, checks types, tests game behavior, and builds the application. Production deployment requires all checks to pass.
 
@@ -59,7 +59,7 @@ Repository checks -> npm ci -> typecheck -> rule tests -> browser checks -> buil
                                                 Cloudflare Pages production
 ```
 
-The required scripts are `typecheck`, `test`, `test:browser`, and `build`. CI runs the Chromium browser scenarios against a production build; the full local suite also covers Firefox and WebKit. Missing scripts fail the build; tests must exit rather than start watch mode. Builds must produce `dist/index.html`.
+The required scripts are `typecheck`, `test`, `test:browser`, and `build`. CI runs the Chromium and Firefox browser scenarios against a production build; the local suite also covers WebKit. Missing scripts fail the build; tests must exit rather than start watch mode. Builds must produce `dist/index.html`.
 
 The deploy job downloads the artifact produced by that same workflow run. It does not rebuild the game with Cloudflare credentials, execute pull-request code, or upload the repository root. `main` runs are serialized to keep older builds from finishing deployment after newer ones; superseded pull-request checks may be canceled.
 

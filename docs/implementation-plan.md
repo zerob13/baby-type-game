@@ -141,7 +141,7 @@ Prepare undo/redo exercises with actual user edits so the browser has a native u
 
 Browser undo history is not serializable. Checkpoint editor runs at the beginning of the current task; resuming restarts that task's instructions and native history while preserving prior task rewards and territory. A checkpoint cannot re-award a completed task.
 
-Use normal Tab order and native clipboard behavior. Do not require `navigator.clipboard.readText()` permission or attempt to catch close-tab, refresh, or application-switching shortcuts. Platform labels can be manually corrected in settings. Browser automation exercises real native editing gestures. Separate physical Windows keyboard and observed child play sessions remain release-calibration checks.
+Use normal Tab order and native clipboard behavior. Safari on macOS may need Option+Tab to include buttons, depending on keyboard-navigation settings; the task explains this native alternative. See [Apple's keyboard shortcuts](https://support.apple.com/guide/safari/cpsh003/mac). Do not require `navigator.clipboard.readText()` permission or attempt to catch close-tab, refresh, or application-switching shortcuts. Platform labels can be manually corrected in settings. Browser automation exercises real native editing gestures. Separate physical Windows keyboard and observed child play sessions remain release-calibration checks.
 
 ## 5. Lesson and content data
 
@@ -190,7 +190,7 @@ For a normal write:
 3. Replace the primary with one `localStorage.setItem` call. Surface success only after that call succeeds.
 4. Catch storage access, quota, and serialization failures. Keep the in-memory run and expose an export action.
 
-On read, distinguish no data, malformed data, unsupported future schema, and inaccessible storage. A future schema is read-only; no reset or automatic migration can overwrite it. A corrupt primary remains available for export while a valid backup can supply recovery. Never invoke `localStorage.clear()`.
+On read, distinguish no data, malformed data, unsupported future schema, and inaccessible storage. A future schema is read-only; no reset or automatic migration can overwrite it. A corrupt primary remains available for export while a valid backup can supply recovery. If neither primary nor backup is readable, block routine writes until an explicit import or confirmed reset. Never invoke `localStorage.clear()`.
 
 Imported data must be validated before confirmation or writes. Show the incoming completion summary, confirm replacement, and preserve the current valid profile as backup. Cancel or failure leaves the current profile intact. Successful replacement discards the superseded run without firing an unconditional page-exit save of stale state.
 
@@ -231,7 +231,7 @@ The detailed concept images are not a promise to reproduce every decorative obje
 - [x] Add home, current lesson entry, game, pause, settings, and results screens. Do not display unusable campaign controls.
 - [x] Implement local save/resume, writer ownership, backups, import/export, and visible save errors.
 - [x] Use a coherent grassland and white-dumpling presentation, including reduced motion and muted feedback.
-- [ ] Pass the M1 rule and browser scenarios below and play from a new profile through victory.
+- [x] Pass the rule and browser scenarios below and play from a new profile through victory.
 
 M1 is complete only when a learner can begin, understand the prompt, grow territory, pause, reload, continue, finish, and replay. A static mockup, an input field without territory rules, or a battle without persistence is incomplete.
 
@@ -260,7 +260,7 @@ M1 is complete only when a learner can begin, understand the prompt, grow territ
 
 - [x] Configure the Cloudflare account/token repository secrets and create the Direct Upload project using the deployment workflow.
 - [x] Activate the configured clean install, type check, behavioral tests, and production build by completing the M1 scaffold and scripts.
-- [ ] Deploy the verified `dist` artifact from GitHub Actions after successful `main` checks; do not enable a second automatic Pages Git build.
+- [x] Deploy the verified `dist` artifact from GitHub Actions after successful `main` checks; do not enable a second automatic Pages Git build.
 - [x] Serve a root `index.html`; keep application navigation in the client without introducing deep-path routing requirements.
 - [ ] Verify the preview, then the selected production domain, save/resume, asset loading, and editor capabilities over HTTPS.
 - [x] Explain export/import when switching from a preview origin to the production domain. Do not imply shared saves across those origins.

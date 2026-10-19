@@ -1,5 +1,7 @@
 # 键芽大陆
 
+[在线体验](https://baby-type-game.pages.dev) · [GitHub](https://github.com/zerob13/baby-type-game)
+
 面向小学三年级左右学生的网页版英文打字冒险游戏。玩家从一格家园出发，通过正确输入产生能量、扩张领地，逐步学会指法、英文单词、句子和常用编辑快捷键。
 
 界面使用中文，练习内容使用英文。游戏采用 GBA 风格的像素地图，角色是白色糯团形象；通过浏览器本地存储保存学习进度和当前战局。
@@ -39,6 +41,8 @@ npm run test:browser
 npm run build
 npm run preview
 ```
+
+On macOS, run `npm run test:browser -- --project=chromium --project=webkit` if the Firefox launcher cannot access its profile. Firefox is also verified on Linux in CI. This host restriction is tracked [upstream](https://github.com/microsoft/playwright/issues/42768); no browser privacy permission changes are needed to use the game.
 
 Browser scenarios cover the complete campaign, native editor tasks, pause/reload, import/export, and one-writer ownership across tabs. The production output is `dist/`. GitHub Actions builds and deploys verified output to Cloudflare Pages on `main`; see [deployment setup](docs/deployment.md).
 
