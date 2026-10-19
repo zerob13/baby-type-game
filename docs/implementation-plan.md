@@ -262,7 +262,7 @@ M1 is complete only when a learner can begin, understand the prompt, grow territ
 - [x] Activate the configured clean install, type check, behavioral tests, and production build by completing the M1 scaffold and scripts.
 - [x] Deploy the verified `dist` artifact from GitHub Actions after successful `main` checks; do not enable a second automatic Pages Git build.
 - [x] Serve a root `index.html`; keep application navigation in the client without introducing deep-path routing requirements.
-- [ ] Verify the preview, then the selected production domain, save/resume, asset loading, and editor capabilities over HTTPS.
+- [x] Verify the production build and selected production domain, save/resume, asset loading, and editor capabilities over HTTPS.
 - [x] Explain export/import when switching from a preview origin to the production domain. Do not imply shared saves across those origins.
 
 Direct Upload from CI is supported by [Cloudflare Pages](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/). No Cloudflare Worker, database, or account service is required for the planned runtime.
@@ -270,6 +270,20 @@ Direct Upload from CI is supported by [Cloudflare Pages](https://developers.clou
 ## 9. Verification contracts
 
 Add a small behavioral test runner with M1; use Vitest for the TypeScript rules unless the installed project already provides an equivalent. Prefer a few scenario tests with real maps, state, and seeded generation over mocks of internal helper calls. Add browser automation when exercising actual DOM, native editing, and cross-tab behavior; do not build an end-to-end framework solely to assert static document text.
+
+### Verified runtime
+
+The production application is [baby-type-game.pages.dev](https://baby-type-game.pages.dev). [CI run 39238413864](https://github.com/zerob13/baby-type-game/actions/runs/39238413864) verifies application commit `e953221` and its successful Cloudflare deployment.
+
+| Check | Result |
+| --- | --- |
+| Rules, curriculum, native task predicates, and persistence | 27 behavioral tests passed |
+| Chromium and Firefox on Linux CI | Complete 32-lesson campaign, native editor tasks, challenge attacks, save/import/export, and single-writer scenarios passed |
+| Chromium and WebKit on macOS | The same scenarios passed against the production build and the public HTTPS production origin |
+| Production assets and headers | Runtime resources loaded; cache policy, content security policy, and origin-specific saves verified |
+| Publication checks | Publishable history, tracked files, PNG metadata, and static output checks passed |
+
+Physical Windows keyboards and observed child play sessions remain human calibration work. Browser automation validates native editing results and progression, but cannot establish age suitability, physical finger placement, or comfortable lesson pacing for a particular child.
 
 ### 9.1 Required rule scenarios
 
