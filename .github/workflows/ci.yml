@@ -16,11 +16,9 @@ concurrency:
 
 jobs:
   check:
-    name: Check repository and build when available
+    name: Check, test, and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      app: ${{ steps.app.outputs.present }}
     steps:
       - name: Check out full publishable history
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -33,41 +31,24 @@ jobs:
           python3 scripts/check_repository.py --self-test
           python3 scripts/check_repository.py
 
-      - name: Detect application scaffold
-        id: app
-        shell: bash
-        run: |
-          if [[ ! -f package.json && ! -f package-lock.json && ! -f index.html ]]; then
-            echo 'present=false' >> "$GITHUB_OUTPUT"
-            echo 'Documentation stage: repository checks run; game build and deployment are skipped.' >> "$GITHUB_STEP_SUMMARY"
-          else
-            for file in package.json package-lock.json index.html; do
-              if [[ ! -f "$file" ]]; then
-                echo "::error::Incomplete application scaffold: $file is required."
-                exit 1
-              fi
-            done
-            echo 'present=true' >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Set up Node.js
-        if: steps.app.outputs.present == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm
 
       - name: Install, validate, test, and build
-        if: steps.app.outputs.present == 'true'
         run: |
           npm ci
           npm run typecheck
           npm test
+          npx playwright install --with-deps chromium
+          npm run test:browser -- --project=chromium
           npm run build
           python3 scripts/check_repository.py --dist
 
       - name: Upload verified static output
-        if: steps.app.outputs.present == 'true' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: pages-dist
@@ -78,7 +59,7 @@ jobs:
   deploy:
     name: Publish to Cloudflare Pages
     needs: check
-    if: github.ref == 'refs/heads/main' && needs.check.outputs.app == 'true'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -109,14 +90,12 @@ jobs:
         run: npm install --global wrangler@4.151.1
 
       - name: Download verified build
-        if: needs.check.outputs.app == 'true'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: pages-dist
           path: dist
 
       - name: Deploy the verified build
-        if: needs.check.outputs.app == 'true'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

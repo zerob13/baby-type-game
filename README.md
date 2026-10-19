@@ -23,11 +23,26 @@
 - 八章课程覆盖字母指法、单词、句子和常用编辑快捷键。
 - 单人对战电脑；进度保存在当前浏览器，可导出和导入存档。
 
-## Development status
+## Development
 
-The repository contains the game design, implementation plan, and concept images. The playable application starts with milestone M1: one grassland map covering guided typing, energy, territory expansion, an optional computer challenge, victory, and local save/resume.
+The static application uses TypeScript, Vite, Canvas 2D, and native HTML controls. The campaign contains 32 lessons across eight chapters, with guided fingering, words, sentences, optional territory challenges, and native selection, clipboard, focus, undo, and redo tasks. Progress and unfinished battles stay in the current browser; JSON export/import moves them between devices or origins.
 
-The planned stack is TypeScript, Vite, Canvas 2D, and native HTML/CSS controls. Runtime scripts and dependencies are introduced with M1. GitHub Actions runs repository checks now and builds/deploys the static game to Cloudflare Pages once the application scaffold exists. Follow the [deployment setup](docs/deployment.md) for the configured Pages project and repository secrets.
+Use Node.js 24, as recorded in `.nvmrc`:
+
+```sh
+npm ci
+npm run dev
+npm run typecheck
+npm test
+npx playwright install chromium firefox webkit
+npm run test:browser
+npm run build
+npm run preview
+```
+
+Browser scenarios cover the complete campaign, native editor tasks, pause/reload, import/export, and one-writer ownership across tabs. The production output is `dist/`. GitHub Actions builds and deploys verified output to Cloudflare Pages on `main`; see [deployment setup](docs/deployment.md).
+
+A physical English QWERTY keyboard is required for the lessons. The hand diagram gives guidance; the browser cannot detect which finger was used. Saves belong to one browser origin. Export before changing domain or clearing site data.
 
 ## Repository checks
 
@@ -37,7 +52,7 @@ python3 scripts/check_repository.py
 git config --local core.hooksPath .githooks
 ```
 
-The pre-push hook and CI check publishable history and files without printing matched private values. The approved owner identity is `zerob13 <i@zerob13.com>`; GitHub noreply identities are also supported. Application build and test commands are introduced with M1.
+The pre-push hook and CI check publishable history and files without printing matched private values. The approved owner identity is `zerob13 <i@zerob13.com>`; GitHub noreply identities are also supported.
 
 ## Repository conventions
 

@@ -2,7 +2,7 @@
 
 The repository uses GitHub Actions to check the source, build the static application, and upload only verified `dist` output to a Cloudflare Pages Direct Upload project. Production follows `main`; pull requests run checks without Cloudflare credentials or production deployment.
 
-The workflow is [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The application is in the documentation stage: repository checks run now, while application checks and deployment activate when `package.json`, `package-lock.json`, and `index.html` are present. An incomplete scaffold fails instead of silently skipping required files.
+The workflow is [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Each run checks publication privacy, installs locked dependencies, checks types, tests game behavior, and builds the application. Production deployment requires all checks to pass.
 
 ## 1. Cloudflare credentials
 
@@ -42,13 +42,13 @@ If this repository is used in a different Cloudflare account, create a Direct Up
 
 ## 4. Automatic production deployment
 
-Once the application scaffold and required npm scripts exist, each push to `main` follows this sequence:
+Each push to `main` follows this sequence:
 
 ```text
 main push
    |
    v
-Repository checks -> npm ci -> typecheck -> tests -> build -> output checks
+Repository checks -> npm ci -> typecheck -> rule tests -> browser checks -> build/output checks
                                                                  |
                                                                  v
                                                      Upload verified dist
@@ -59,7 +59,7 @@ Repository checks -> npm ci -> typecheck -> tests -> build -> output checks
                                                 Cloudflare Pages production
 ```
 
-The required scripts are `typecheck`, `test`, and `build`. Missing scripts fail the build; tests must exit rather than start watch mode. Builds must produce `dist/index.html`.
+The required scripts are `typecheck`, `test`, `test:browser`, and `build`. CI runs the Chromium browser scenarios against a production build; the full local suite also covers Firefox and WebKit. Missing scripts fail the build; tests must exit rather than start watch mode. Builds must produce `dist/index.html`.
 
 The deploy job downloads the artifact produced by that same workflow run. It does not rebuild the game with Cloudflare credentials, execute pull-request code, or upload the repository root. `main` runs are serialized to keep older builds from finishing deployment after newer ones; superseded pull-request checks may be canceled.
 
@@ -91,7 +91,6 @@ All values embedded in a browser bundle, including Vite's `VITE_*` variables, ar
 
 | Result | Meaning and action |
 | --- | --- |
-| Repository checks pass; build/deploy skipped | The current commit has no game scaffold. This is expected for documentation-only work. |
 | Invalid account ID | Save the account ID, not a zone ID or account name, in `CLOUDFLARE_ACCOUNT_ID`. |
 | Missing token | Save `CLOUDFLARE_API_TOKEN` as a repository Actions secret. |
 | Cloudflare authentication failure | Check token validity, Pages Edit permission, selected account, and token expiration. |
@@ -100,4 +99,4 @@ All values embedded in a browser bundle, including Vite's `VITE_*` variables, ar
 | Privacy guard fails | Inspect the named file/category locally; do not publish the matched value to investigate it. |
 | No saved progress on a new domain | Browser saves are origin-specific. Export from the previous origin and import on the new one. |
 
-After the first game deployment, verify the actual Pages address, asset loading, complete game loop, refresh/resume, and import/export. A passing documentation check  is not a completed end-to-end game deployment.
+Verify the actual Pages address, asset loading, complete game loop, refresh/resume, and import/export over HTTPS after deployment. Browser saves on localhost, deployment preview addresses, and the production address are separate.

@@ -8,13 +8,13 @@ Use TypeScript, Vite's vanilla TypeScript setup, Canvas 2D for the map, and nati
 
 Vite supports a `vanilla-ts` template and produces static build output. Select a supported Node.js LTS satisfying the installed Vite release's engine requirement, record its major version in the repository when scaffolding, and commit one npm lockfile. Do not scaffold over the existing README or documentation. See [Vite's getting-started guide](https://vite.dev/guide/).
 
-The first playable milestone implements lesson `grassland-01`. A complete campaign contains 32 lessons across eight chapters; add their content when each chapter's mechanics are ready. Do not create empty framework layers or placeholder modules for those chapters.
+The campaign contains 32 implemented lessons across eight chapters. `grassland-01` is the fixed introductory map; later lessons add seeded terrain, curated content, native editor tasks, and different opponent schedules.
 
-The current repository contains documentation, concept images, repository privacy checks, and a GitHub Actions deployment workflow. Runtime entry points, application dependencies, and gameplay tests belong to the implementation milestones below. Cloudflare setup is specified in the [deployment guide](deployment.md).
+The repository contains the playable application, runtime portraits, concept references, behavioral and browser tests, publication checks, and GitHub Actions deployment. Cloudflare setup is specified in the [deployment guide](deployment.md).
 
 ## 2. Source organization
 
-Start with these responsibilities; add files only when their implementation exists:
+The source has these responsibilities:
 
 | File | Responsibility |
 | --- | --- |
@@ -22,11 +22,13 @@ Start with these responsibilities; add files only when their implementation exis
 | `src/game.ts` | Game state and exported types; pure input, energy, territory, metrics, enemy, and victory rules |
 | `src/lessons.ts` | Typed lesson data, fixed maps, allowed characters, curated prompts, and seeded generation |
 | `src/render.ts` | Canvas drawing and visual interpolation; no ownership of game rules or scores |
+| `src/editor.ts` | Native editing tasks and success validation |
 | `src/save.ts` | Snapshot validation, local storage, writer ownership, backups, import, and export |
 | `src/styles.css` | Layout, accessible UI states, character presentation, and responsive sizing |
 | `src/assets/` | Actual runtime tiles, sprites, portraits, and audio used by the application |
 | `tests/game.test.ts` | Observable game-rule scenarios using real deterministic state |
 | `tests/save.test.ts` | Save validation and recovery behavior |
+| `tests/browser/adventure.spec.ts` | Complete campaign, native gestures, reload, import/export, and cross-tab ownership |
 
 Keep functions and types exported from the owning module rather than adding an event bus, service container, entity/component system, or a generic plugin interface. Concept PNGs under `docs/concepts/` are documentation references, not a full-screen runtime background or production sprite sheet.
 
@@ -139,13 +141,13 @@ Prepare undo/redo exercises with actual user edits so the browser has a native u
 
 Browser undo history is not serializable. Checkpoint editor runs at the beginning of the current task; resuming restarts that task's instructions and native history while preserving prior task rewards and territory. A checkpoint cannot re-award a completed task.
 
-Use normal Tab order and native clipboard behavior. Do not require `navigator.clipboard.readText()` permission or attempt to catch close-tab, refresh, or application-switching shortcuts. Platform labels can be manually corrected in settings. Validate the native editing gestures on Windows and macOS before those lessons ship.
+Use normal Tab order and native clipboard behavior. Do not require `navigator.clipboard.readText()` permission or attempt to catch close-tab, refresh, or application-switching shortcuts. Platform labels can be manually corrected in settings. Browser automation exercises real native editing gestures. Separate physical Windows keyboard and observed child play sessions remain release-calibration checks.
 
 ## 5. Lesson and content data
 
 Use stable identifiers, for example `grassland-01` through `grassland-04`. A lesson record contains its chapter, order, title, kind, prerequisite, allowed characters, new characters, content source, map, target CPM when applicable, tutorial steps, opponent behavior, and data revision.
 
-The 32-lesson syllabus and initial challenge targets live in section 9 of the game design. Introduce lesson records when their milestone is implemented; do not maintain a separate speculative JSON course engine.
+The syllabus and challenge targets live in section 9 of the game design and typed records in `src/lessons.ts`. No generic course engine or runtime content service is used.
 
 - Complete learning mode to unlock the next lesson. Challenge or star requirements never block the curriculum.
 - Unlock challenge only after completing that ordinary lesson's learning mode. Editor lessons have no separate challenge mode.
@@ -164,20 +166,20 @@ Use the storage keys `keybud.save` and `keybud.save.backup`. Export the same val
 | Field | Contents |
 | --- | --- |
 | `schemaVersion` | Save structure version, initially `1` |
-| `revision` | Monotonic write revision for detecting stale state |
+| `revision` | Write counter; Web Locks provide exclusive writer ownership |
 | `savedAt` | Wall-clock timestamp used for display, never for battle catch-up |
 | `settings` | Audio, reduced motion, hints, view mode, and shortcut platform |
 | `progress` | Stable lesson IDs, completion per supported mode, same-run stars, and bounded aggregate records |
 | `keyStats` | Bounded totals by supported target character |
 | `activeRun` | A paused-compatible snapshot, or `null` |
 
-An active snapshot includes lesson and map IDs and their data revisions; the terrain variant or its validated mask; owners; protected home; enemy flag; seed and current PRNG state; prompt, cursor, and generator bag; energy, combo, pressure, pending attack and cooldown state; total active time, step remainder, counters, key statistics, and tutorial state. Editor snapshots also include completed task IDs and the current task-start checkpoint.
+An active snapshot includes lesson and map IDs and their data revisions; the terrain variant or its validated mask; owners; protected home; enemy flag; seed and current PRNG state; prompt, cursor, and generator bag; energy, combo, pressure, pending attack and cooldown state; total active time, step remainder, counters, key statistics, and tutorial state. Editor snapshots also include current task index and task-start checkpoint.
 
 Always restore into `paused`, clear the recent-speed window, and require readiness before play. Reject a snapshot whose lesson/map revision cannot be interpreted; keep completed curriculum and offer to restart that lesson rather than guessing new tile ownership.
 
 ### 6.2 Validation and recovery
 
-Treat local storage and imported JSON as untrusted input. Enforce a 1 MiB import limit, a maximum 32 by 20 board, exact mask/owner lengths, a legal home and enemy flag, valid enum values, bounded strings, known lesson references, nonnegative finite times, safe integer counters, and valid pressure/energy ranges. Ordinary prompts must satisfy allowed-character rules; editor content must satisfy its task definition.
+Treat local storage and imported JSON as untrusted input. Enforce a 1 MiB import limit, the exact seeded 12 by 8 board, exact mask/owner lengths, a legal home and enemy flag, valid enum values, bounded strings, known lesson references, nonnegative finite times, safe integer counters, and valid pressure/energy ranges. Ordinary prompts must satisfy allowed-character rules; editor content must satisfy its task definition.
 
 Reconstruct known fields explicitly. Do not spread arbitrary imported objects into live state or render imported strings with `innerHTML`. Confirm that terrain and ownership are consistent, all claimable cells are statically connected, and player ownership remains connected to home. Use the same validator for local reads, backups, and imports.
 
@@ -190,7 +192,7 @@ For a normal write:
 
 On read, distinguish no data, malformed data, unsupported future schema, and inaccessible storage. A future schema is read-only; no reset or automatic migration can overwrite it. A corrupt primary remains available for export while a valid backup can supply recovery. Never invoke `localStorage.clear()`.
 
-Imported data must be validated before confirmation or writes. Show the incoming completion summary and active lesson, confirm replacement, and preserve the current valid profile as backup. Cancel or failure leaves the current profile intact. Successful replacement discards the superseded run without firing an unconditional page-exit save of stale state.
+Imported data must be validated before confirmation or writes. Show the incoming completion summary, confirm replacement, and preserve the current valid profile as backup. Cancel or failure leaves the current profile intact. Successful replacement discards the superseded run without firing an unconditional page-exit save of stale state.
 
 ### 6.3 Single writer and save timing
 
@@ -212,7 +214,7 @@ The ASCII layouts, cast, and visual rules in sections 2 and 10 of the game desig
 - Use visible focus, accessible labels, readable contrast, and color-independent outlines and symbols. Do not announce every animation or keystroke through a live region.
 - Default to a 1024 by 700 CSS-pixel target layout; preserve the input panel and navigation at smaller sizes and under browser zoom.
 - Respect reduced-motion preferences and the saved override. Audio starts after a user gesture and has separate music/effects controls.
-- Load the current chapter's runtime assets rather than the entire campaign. Keep M1's initial compressed transfer at or below a 3 MiB budget; measure actual output before making a performance claim.
+- Use one transparent portrait atlas and code-drawn pixel environments. The initial production output is approximately 1.22 MiB, within the 3 MiB transfer budget; concept boards are excluded from the application bundle.
 - Missing optional art or audio must not prevent input, saving, or completing a run. Essential asset failures need a retry path.
 
 The detailed concept images are not a promise to reproduce every decorative object in the first milestone. Runtime art starts with one grass tile set, blocked terrain, a bridge where required, small white-dumpling sprites, portraits, and clear ownership borders. Add scene decorations without changing the underlying rules.
@@ -221,47 +223,47 @@ The detailed concept images are not a promise to reproduce every decorative obje
 
 ### M1: One complete grassland lesson
 
-- [ ] Create the Vite/TypeScript application and one lockfile without replacing existing documentation.
-- [ ] Add the `grassland-01` map, f/j lesson, hand-position tutorial, seeded groups, and a real input panel.
-- [ ] Implement energy, combo, four-neighbor expansion, protected home, metrics, and terminal victory.
-- [ ] Ship learning mode first; unlock the same lesson's steady challenge after completion.
-- [ ] Implement rolling-speed pressure, mistake penalties, warning/cooldown, and pause/resume.
-- [ ] Add home, current lesson entry, game, pause, settings, and results screens. Do not display unusable campaign controls.
-- [ ] Implement local save/resume, writer ownership, backups, import/export, and visible save errors.
-- [ ] Use a coherent grassland and white-dumpling presentation, including reduced motion and muted feedback.
+- [x] Create the Vite/TypeScript application and one lockfile without replacing existing documentation.
+- [x] Add the `grassland-01` map, f/j lesson, hand-position tutorial, seeded groups, and a real input panel.
+- [x] Implement energy, combo, four-neighbor expansion, protected home, metrics, and terminal victory.
+- [x] Ship learning mode first; unlock the same lesson's steady challenge after completion.
+- [x] Implement rolling-speed pressure, mistake penalties, warning/cooldown, and pause/resume.
+- [x] Add home, current lesson entry, game, pause, settings, and results screens. Do not display unusable campaign controls.
+- [x] Implement local save/resume, writer ownership, backups, import/export, and visible save errors.
+- [x] Use a coherent grassland and white-dumpling presentation, including reduced motion and muted feedback.
 - [ ] Pass the M1 rule and browser scenarios below and play from a new profile through victory.
 
 M1 is complete only when a learner can begin, understand the prompt, grow territory, pause, reload, continue, finish, and replay. A static mockup, an input field without territory rules, or a battle without persistence is incomplete.
 
 ### M2: Foundational fingering curriculum
 
-- [ ] Implement chapters 1 to 3, the chapter route, lesson unlocks, per-mode records, and same-run stars.
-- [ ] Add allowed-character validation, weak-key reporting, controlled prompt weighting, and an unlocked practice entry.
-- [ ] Teach the full home row, upper and lower rows, learned spaces, and basic punctuation in syllabus order.
-- [ ] Add connected terrain variants and test seeds against reachability and valid spawn rules.
+- [x] Implement chapters 1 to 3, the chapter route, lesson unlocks, per-mode records, and same-run stars.
+- [x] Add allowed-character validation, weak-key reporting, controlled prompt weighting, and an unlocked practice entry.
+- [x] Teach the full home row, upper and lower rows, learned spaces, and basic punctuation in syllabus order.
+- [x] Add connected terrain variants and test seeds against reachability and valid spawn rules.
 
 ### M3: Words, punctuation, and native editing
 
-- [ ] Implement chapters 4 to 6 with curated words and short sentences.
-- [ ] Teach opposite-hand Shift, digits, punctuation, backward/forward deletion, and editing keys.
-- [ ] Add selection, focus, real clipboard, undo, and redo tasks with task-start checkpoints.
-- [ ] Verify Windows and macOS behavior; label and skip unavailable gestures without simulating a successful native action.
+- [x] Implement chapters 4 to 6 with curated words and short sentences.
+- [x] Teach opposite-hand Shift, digits, punctuation, backward/forward deletion, and editing keys.
+- [x] Add selection, focus, real clipboard, undo, and redo tasks with task-start checkpoints.
+- [ ] Verify physical Windows keyboard behavior and browser-specific system accessibility settings; do not simulate a successful native action when a gesture is unavailable.
 
 ### M4: Complete adventure
 
-- [ ] Implement chapters 7 and 8, charge and periodic opponents, the final battle, and the ending.
-- [ ] Complete chapter restoration scenes, runtime pixel art, portraits, and restrained audio.
-- [ ] Verify all 32 lessons, every map variant, content restrictions, unlock paths, and victory conditions.
+- [x] Implement chapters 7 and 8, charge and periodic opponents, the final battle, and the ending.
+- [x] Complete chapter restoration scenes, runtime pixel art, portraits, and restrained audio.
+- [x] Verify all 32 lessons, every map variant, content restrictions, unlock paths, and victory conditions.
 - [ ] Run observed child play sessions and adjust map workload, prompts, and pressure according to the design's order of priorities.
 
 ### M5: Publish the static game
 
-- [ ] Configure the Cloudflare account/token repository secrets and create the Direct Upload project using the deployment workflow.
-- [ ] Activate the configured clean install, type check, behavioral tests, and production build by completing the M1 scaffold and scripts.
+- [x] Configure the Cloudflare account/token repository secrets and create the Direct Upload project using the deployment workflow.
+- [x] Activate the configured clean install, type check, behavioral tests, and production build by completing the M1 scaffold and scripts.
 - [ ] Deploy the verified `dist` artifact from GitHub Actions after successful `main` checks; do not enable a second automatic Pages Git build.
-- [ ] Serve a root `index.html`; keep application navigation in the client without introducing deep-path routing requirements.
+- [x] Serve a root `index.html`; keep application navigation in the client without introducing deep-path routing requirements.
 - [ ] Verify the preview, then the selected production domain, save/resume, asset loading, and editor capabilities over HTTPS.
-- [ ] Explain export/import when switching from a preview origin to the production domain. Do not imply shared saves across those origins.
+- [x] Explain export/import when switching from a preview origin to the production domain. Do not imply shared saves across those origins.
 
 Direct Upload from CI is supported by [Cloudflare Pages](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/). No Cloudflare Worker, database, or account service is required for the planned runtime.
 
@@ -310,7 +312,7 @@ Use observed child play to assess whether instructions teach the intended hand p
 
 ## 10. Acceptance commands
 
-Introduce these commands with M1; they do not exist in the documentation-only repository:
+Use Node.js 24 and the committed lockfile:
 
 | Command | Contract |
 | --- | --- |
@@ -318,6 +320,7 @@ Introduce these commands with M1; they do not exist in the documentation-only re
 | `npm run dev` | Local development server |
 | `npm run typecheck` | TypeScript validation without emitting application output |
 | `npm test` | Non-watch behavioral checks that exit with a result |
+| `npm run test:browser` | Build and exercise the production application in Chromium, Firefox, and WebKit |
 | `npm run build` | Type validation and optimized static output in `dist` |
 | `npm run preview` | Serve the production build for local verification |
 
